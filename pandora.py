@@ -54,6 +54,16 @@ class Player:
 
         print "Now playing station: " + self.indexDict[str(index)]
 
+    def next(self):
+        """
+        Skips to the next track.
+        """
+        print 'Skipping track...'
+        if self.waitingForStation:
+            self.child.send('\n')
+            self.waitingForStation = False
+        self.child.send('n')
+
     def quit(self):
         """
         Exits gracefully from the Pianobar.
@@ -112,6 +122,10 @@ print ''
 
 player.playByIndex(4)
 
-time.sleep(10)
+time.sleep(5)
+
+player.next()
+
+time.sleep(5)
 
 player.quit()
