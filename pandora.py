@@ -57,6 +57,28 @@ class Player:
 
         print "Now playing station: " + self.indexDict[str(index)]
 
+    def thumbsUp(self):
+        """
+        Thumbs up the current track.
+        """
+        self.updateTrack()
+        print "Liked track " + self.track
+        if self.waitingForStation:
+            self.child.send('\n')
+            self.waitingForStation = False
+        self.child.send('+')
+
+    def thumbsDown(self):
+        """
+        Thumbs down the current track.
+        """
+        self.updateTrack()
+        print "Disliked track " + self.track
+        if self.waitingForStation:
+            self.child.send('\n')
+            self.waitingForStation = False
+        self.child.send('-')
+
     def next(self):
         """
         Skips to the next track.
