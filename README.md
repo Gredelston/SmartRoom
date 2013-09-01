@@ -12,13 +12,11 @@ Pianobar: A Pandora app that runs in the terminal.
     cp /usr/share/doc/pianobar/contrib/config-example ~/.config/pianobar
     vim ~/.config/pianobar
 Edit the `tls\_fingerprint` to be:
+
     ```
     2D0AFDAFA16F4B5C0A43F3CB1D4752F9535507C0
     ```
 
-PyTTS: A Python text-to-speech synthesizer.
-    ```
-    cd ~/Downloads
-    git clone https://github.com/RobinDavid/pytts
-    python setup.py install
-    ```
+Notes
+-----
+I did not make the PyTTS speech synthesizer; Robin David did. Thanks for being a pal, Robin David!
