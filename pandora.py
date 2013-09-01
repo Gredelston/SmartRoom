@@ -8,12 +8,12 @@ class Player:
         When the Player is instantiated, spawn pianobar in the terminal.
         If music defaults to playing, pause it and go to the station select screen.
         """
+        print 'Launching Pandora player...'
 
         # First things first, clear that pesky state config file.
         # Otherwise, pianobar will default to playing a station,
         # which just throws everything off.
         if os.path.isfile(os.path.expanduser("~" + "/.config/pianobar/state")):
-            print "Clearing state config file."
             os.system("rm ~/.config/pianobar/state")
 
         # Spawn the Pianobar
@@ -27,6 +27,9 @@ class Player:
         self.currentStationIndex = -1 # By convention, this means no station yet.
         self.playing = False
 
+        self.track = None
+        self.artist = None
+        self.album = None
 
 
     def playByIndex(self, index):
@@ -41,16 +44,16 @@ class Player:
 
         # Make sure we're waiting for station.
         if not self.waitingForStation:
-            print 'Switching to station select.'
             self.child.send('s') # Change station
             self.waitingForStation = True
         else:
-            print 'Already at station select.'
+            pass
 
         self.child.sendline(str(index))
         self.playing = True
         self.waitingForStation = False
         self.currentStationIndex = int(index)
+        self.currentStationName = self.indexDict[str(self.currentStationIndex)]
 
         print "Now playing station: " + self.indexDict[str(index)]
 
@@ -63,6 +66,65 @@ class Player:
             self.child.send('\n')
             self.waitingForStation = False
         self.child.send('n')
+
+    def updateTrack(self):
+        """
+        Figures out the name of the track currently playing.
+        """
+        # Flip through all the tracks that have happened since last time.
+        newTrackFlag = False
+        while True:
+            i = self.child.expect(['\|>', pexpect.TIMEOUT], timeout=1)
+            if i == 0: # Found another track
+                newTrackFlag = True
+            elif i == 1: # That was the last one!
+                break
+
+        # If this track is different from the old one,
+        if newTrackFlag:
+            # Get ["'Track', 'Name'", 'by', '"Artist', 'Name"', 'on', '"Album', 'Name"', '<3'?, '\xlb[2K']
+            self.child.expect('#')
+            wordList = self.child.before.split()
+
+            hitByOn = 0
+            trackList = []
+            artistList = []
+            albumList = []
+
+            # parse that shit
+            for i in range(len(wordList)):
+                # if we're at the track
+                if hitByOn == 0:
+                    # if we're changing to the artist (happens at "by")
+                    if i != 0 and (wordList[i-1][-1] == '"' and wordList[i] == 'by' and wordList[i+1][0] == '"'):
+                        hitByOn = 1
+                        continue
+                    else:
+                        trackList.append(wordList[i])
+
+                # if we're at the artist
+                elif hitByOn == 1:
+                    # if we're changing to the album (happens at "on")
+                    if wordList[i-1][-1] == '"' and wordList[i] == 'on' and wordList[i+1][0] == '"':
+                        hitByOn = 2
+                        continue
+                    else:
+                        artistList.append(wordList[i])
+
+                # if we're at the album
+                elif hitByOn == 2:
+                    # if we're done
+                    if wordList[i] == '<3' or i == len(wordList)-1:
+                        break
+                    else:
+                        albumList.append(wordList[i])
+
+            # Put that thing back where it came from, or so help me
+            # (So help me! So help me!)
+            self.track = " ".join(trackList)
+            self.artist = " ".join(artistList)
+            self.album = " ".join(albumList)
+
 
     def quit(self):
         """
@@ -111,21 +173,31 @@ class Player:
         self.stationDict = stationDict
         self.indexDict = indexDict
 
+    def __str__(self):
+        self.updateTrack()
+        return 'Currently playing ' + self.track + " by " + self.artist + " on " + self.album
 
 
-player = Player()
-player.playByIndex(2)
+# Cool shit to show you that shit works!
+if __name == "__main__":
+    import time
+    import tts
 
-import time
-time.sleep(10)
-print ''
+    player = Player()
 
-player.playByIndex(4)
+    player.playByIndex(7)
+    print player
 
-time.sleep(5)
+    time.sleep(3)
 
-player.next()
+    player.playByIndex(3)
+    time.sleep(5)
+    player.next()
+    player.next()
 
-time.sleep(5)
+    print player
+    tts.say(player.__str__())
 
-player.quit()
+    time.sleep(5)
+
+    player.quit()
